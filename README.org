@@ -1,0 +1,2 @@
+* Generic Grafcet Framework
+This is a framework that let's you build a generic Grafcet system with very simple macros.
