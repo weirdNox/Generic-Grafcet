@@ -33,6 +33,8 @@
 #include <termios.h>
 #include <stropts.h>
 
+// Linux (POSIX) implementation of _kbhit().
+// Morgan McGuire, morgan@cs.brown.edu
 int _kbhit() {
     static const int STDIN = 0;
     static bool initialized = false;
