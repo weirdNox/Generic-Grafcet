@@ -158,9 +158,9 @@ static output Outputs[] = { outputMacro(outputStructWriter) };
 typedef enum { outputMacro(ioEnumWriter) } outputLabel;
 #define output(Label) Outputs[IO_##Label].Active = true
 
-#define FREEZE(Id) Grafcets[Id].Frozen = true
-#define ACTIVE(Name) States[State_X##Name].Active
-#define TIMER(Name) States[State_X##Name].Timer
+#define freeze(Id) Grafcets[Id].Frozen = true
+#define active(Name) States[State_X##Name].Active
+#define timer(Name) States[State_X##Name].Timer
 
 #define OUTPUTS_AND_CONDITIONS
 #include "preprocessor_output.h"
@@ -182,28 +182,48 @@ static bool checkTransitionState(transition *Transition) {
 }
 
 int main(int Argc, char *Argv[]) {
-    // NOTE(nox): Grafcets definitions
-    newState(0, 1, { });
-    newState(0, 2, { FREEZE(1); });
-    newTransition(0, t0, ARR(State_X1), ARR(State_X2), (input(M_MAX)));
-    newTransition(0, t1, ARR(State_X2), ARR(State_X1), (input(M_MIN)));
-
-    newState(1, 3, { output(ESQUERDA); });
-    newState(1, 4, { output(BOMBA_V5); });
-    newTransition(1, t2, ARR(State_X3), ARR(State_X4), (TIMER(3) >= 10));
-    newTransition(1, t3, ARR(State_X4), ARR(State_X3), (TIMER(4) >= 10));
-
-    // NOTE(nox): Set default
+    // NOTE(nox): Control Grafcet
+    newState(1, 1, {});
     States[State_X1].Active = true;
-    States[State_X3].Active = true;
+    newTransition(1, 1, ARR(State_X1), ARR(State_X2, State_X4, State_X6), (input(CICLO)));
 
-    // NOTE(nox): Generic grafcet logic
+    newState(1, 2, { output(V1); });
+    newState(1, 3, {});
+    newTransition(1, 2, ARR(State_X2), ARR(State_X3), (input(PRATO1)));
+
+    newState(1, 4, { output(V3); });
+    newState(1, 5, {});
+    newTransition(1, 3, ARR(State_X4), ARR(State_X5), (input(PRATO2)));
+
+    newState(1, 6, { if(!input(M_MAX)) output(V5); });
+    newTransition(1, 4, ARR(State_X3, State_X5, State_X6), ARR(State_X7), (input(M_MAX)));
+
+    newState(1, 7, { output(ESQUERDA); output(MOTOR_PA); output(V2); output(V4);  });
+    newTransition(1, 5, ARR(State_X7), ARR(State_X8), (timer(7)>=30));
+
+    newState(1, 8, { output(ESQUERDA); output(MOTOR_PA); });
+    newTransition(1, 6, ARR(State_X8), ARR(State_X9), (timer(8)>=40));
+
+    newState(1, 9, { output(V7); });
+    newTransition(1, 7, ARR(State_X9), ARR(State_X1), (input(M_MIN)));
+
+
+    // NOTE(nox): Supervisor Grafcet
+    newState(0, s1, {});
+    States[State_Xs1].Active = true;
+    newTransition(0, s1, ARR(State_Xs1), ARR(State_Xs2), ((active(2) || active(4) || active(6) || active(7)) &&
+                                                          input(PARAGEM)));
+    newState(0, s2, { freeze(1); });
+    newTransition(0, s2, ARR(State_Xs2), ARR(State_Xs1), (!input(PARAGEM)));
+
+
+    // NOTE(nox): Generic grafcet logic ----------------------------------------
     for(;;) {
         if(input(QUIT)) {
             break;
         }
         // NOTE(nox): Reset outputs
-        for(int Index = 0; Index < ArrayCount(Inputs); ++Index) {
+        for(int Index = 0; Index < ArrayCount(Outputs); ++Index) {
             Outputs[Index].Active = false;
         }
 
