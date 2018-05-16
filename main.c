@@ -265,7 +265,7 @@ int main(int Argc, char *Argv[]) {
             }
 
             // NOTE(nox): Print debug information
-            printf("Grafcet %d     States:\n", GrafcetId);
+            printf("Grafcet %d %s\n", GrafcetId, Grafcet->Frozen ? "FROZEN" : "");
             for(int Index = 0; Index < Grafcet->StateCount; ++Index) {
                 printf("%5s: %s\n", States[Grafcet->States[Index]].Name,
                        States[Grafcet->States[Index]].Active ? "Active" : "Inactive");
