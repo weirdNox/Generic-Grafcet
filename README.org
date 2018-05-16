@@ -1,2 +1,29 @@
-* Generic Grafcet Framework
-This is a framework that let's you build a generic Grafcet system with very simple macros.
+* Generic Grafcet
+This is a program that implements generic Grafcet systems with the help of very simple
+macros. It is not provided as a library, but it should be easy to adapt it and embed it in
+other programs.
+
+It works by having the source be fed to a preprocessor, which generates custom functions
+and enums in another file (preprocessor_output.h) that will be included by the original
+one. This is a technique called [[https://en.wikipedia.org/wiki/Metaprogramming][metaprogramming]].
+
+** Features
+- Generic grafcet system, with a variable number of grafcets, states and transitions
+- Customizable inputs and outputs
+- Automatic debug information
+- State timers
+- Supervising
+  - Hierarchy (grafcets with lower index are updated first)
+  - Grafcet freeze function
+
+** The preprocessor
+It was based on the simple preprocessor made on [[https://handmadehero.org/][Handmade Hero]] (which is a huge inspiration
+for me!). It uses a pseudo [[https://en.wikipedia.org/wiki/Recursive_descent_parser][Recursive Descent]] which only parses some tokens of interest,
+from all that are scanned.
+
+** Some things missing
+- Grafcet reset utility (set it to the starting point)
+- Grafcet pausing
+
+** License
+This is made available in the MIT License, with some third party code documented as such.
