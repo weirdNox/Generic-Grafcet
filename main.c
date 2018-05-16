@@ -24,6 +24,7 @@
 
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -93,7 +94,7 @@ typedef TRANSITION_CONDITION_FUNCTION(transition_condition_function);
     } while(0)
 
 
-#define GRAFCET_COUNT 1
+#define GRAFCET_COUNT 2
 #define GRAFCET_MAX_STATES 1024
 #define GRAFCET_MAX_TRANSITIONS 1024
 #define NAME_LENGTH 1<<4
@@ -101,6 +102,7 @@ typedef TRANSITION_CONDITION_FUNCTION(transition_condition_function);
 typedef struct {
     bool Active;
     char Name[NAME_LENGTH];
+    uint64_t Timer;
     state_output_function *Output;
 } state;
 
@@ -128,21 +130,6 @@ static grafcet Grafcets[GRAFCET_COUNT];
 static state States[StateCount];
 static transition Transitions[TransitionCount];
 
-static bool checkTransitionState(transition *Transition) {
-    bool AllPrevious = true;
-    for(int PrevIndex = 0; PrevIndex < Transition->PreviousStatesCount; ++PrevIndex) {
-        if(!States[Transition->PreviousStates[PrevIndex]].Active) {
-            AllPrevious = false;
-            break;
-        }
-    }
-    if(AllPrevious) {
-        return Transition->Condition();
-    }
-
-    return false;
-}
-
 // NOTE(nox): Inputs and Outputs
 #define ioEnumWriter(Name, ...) IO_##Name
 
@@ -153,7 +140,7 @@ typedef struct {
 } input;
 
 #define inputStructWriter(Name, Key) { false, #Name, Key }
-#define inputMacro(W) W(M_MAX, 'a'), W(M_MIN, 's'), W(PRATO1, 'd'), W(PRATO2, 'f'), W(PARAGEM, 'p'), W(CICLO, 'c')
+#define inputMacro(W) W(QUIT, 'q'), W(M_MAX, 'a'), W(M_MIN, 's'), W(PRATO1, 'd'), W(PRATO2, 'f'), W(PARAGEM, 'p'), W(CICLO, 'c')
 
 static input Inputs[] = { inputMacro(inputStructWriter) };
 typedef enum { inputMacro(ioEnumWriter) } inputLabel;
@@ -171,38 +158,56 @@ static output Outputs[] = { outputMacro(outputStructWriter) };
 typedef enum { outputMacro(ioEnumWriter) } outputLabel;
 #define output(Label) Outputs[IO_##Label].Active = true
 
-#define ESQUERDA Outputs[0]
-#define BOMBA_V5 Outputs[1]
-#define MOTOR_PA Outputs[2]
-#define V1 Outputs[3]
-#define V2 Outputs[4]
-#define V3 Outputs[5]
-#define V4 Outputs[6]
-#define V7 Outputs[7]
-
+#define FREEZE(Id) Grafcets[Id].Frozen = true
+#define ACTIVE(Name) States[State_X##Name].Active
+#define TIMER(Name) States[State_X##Name].Timer
 
 #define OUTPUTS_AND_CONDITIONS
 #include "preprocessor_output.h"
 #undef OUTPUTS_AND_CONDITIONS
 
+static bool checkTransitionState(transition *Transition) {
+    bool AllPrevious = true;
+    for(int PrevIndex = 0; PrevIndex < Transition->PreviousStatesCount; ++PrevIndex) {
+        if(!States[Transition->PreviousStates[PrevIndex]].Active) {
+            AllPrevious = false;
+            break;
+        }
+    }
+    if(AllPrevious) {
+        return Transition->Condition();
+    }
+
+    return false;
+}
+
 int main(int Argc, char *Argv[]) {
     // NOTE(nox): Grafcets definitions
-    newState(0, 1, { output(ESQUERDA); });
-    newState(0, 2, { output(V3); });
+    newState(0, 1, { });
+    newState(0, 2, { FREEZE(1); });
     newTransition(0, t0, ARR(State_X1), ARR(State_X2), (input(M_MAX)));
     newTransition(0, t1, ARR(State_X2), ARR(State_X1), (input(M_MIN)));
 
+    newState(1, 3, { output(ESQUERDA); });
+    newState(1, 4, { output(BOMBA_V5); });
+    newTransition(1, t2, ARR(State_X3), ARR(State_X4), (TIMER(3) >= 10));
+    newTransition(1, t3, ARR(State_X4), ARR(State_X3), (TIMER(4) >= 10));
+
     // NOTE(nox): Set default
     States[State_X1].Active = true;
+    States[State_X3].Active = true;
 
     // NOTE(nox): Generic grafcet logic
     for(;;) {
+        if(input(QUIT)) {
+            break;
+        }
         // NOTE(nox): Reset outputs
         for(int Index = 0; Index < ArrayCount(Inputs); ++Index) {
             Outputs[Index].Active = false;
         }
 
-        clear();
+        // NOTE(nox): Read inputs
         while(_kbhit()) {
             char C = getchar();
             for(int Index = 0; Index < ArrayCount(Inputs); ++Index) {
@@ -213,6 +218,15 @@ int main(int Argc, char *Argv[]) {
             }
         }
 
+        // NOTE(nox): Update timers
+        for(int Index = 0; Index < StateCount; ++Index) {
+            state *State = States + Index;
+            if(State->Active) {
+                ++State->Timer;
+            }
+        }
+
+        clear();
         for(int GrafcetId = 0; GrafcetId < GRAFCET_COUNT; ++GrafcetId) {
             grafcet *Grafcet = Grafcets + GrafcetId;
             // NOTE(nox): Calculate transitions
@@ -237,6 +251,7 @@ int main(int Argc, char *Argv[]) {
                 if(Transition->Active) {
                     for(int NextIndex = 0; NextIndex < Transition->NextStatesCount; ++NextIndex) {
                         States[Transition->NextStates[NextIndex]].Active = true;
+                        States[Transition->NextStates[NextIndex]].Timer = 0;
                     }
                 }
             }
@@ -262,7 +277,7 @@ int main(int Argc, char *Argv[]) {
         }
 
         printf("Inputs:\n");
-        for(int Index = 0; Index < ArrayCount(Inputs); ++Index) {
+        for(int Index = 1; Index < ArrayCount(Inputs); ++Index) {
             printf("%10s (%c): %s\n", Inputs[Index].Name, Inputs[Index].Key, Inputs[Index].Active ? "Active" : "Inactive");
         }
         puts("");
