@@ -57,6 +57,8 @@ int _kbhit() {
 
 
 #define clear() printf("\033[H\033[J")
+#define green(text) "\x1B[32m" text "\x1B[0m"
+#define blue(text) "\x1B[34m" text "\x1B[0m"
 
 #define ArrayCount(arr) ((sizeof(arr))/sizeof(*arr))
 
@@ -285,10 +287,10 @@ int main(int Argc, char *Argv[]) {
             }
 
             // NOTE(nox): Print debug information
-            printf("Grafcet %d %s\n", GrafcetId, Grafcet->Frozen ? "FROZEN" : "");
+            printf("Grafcet %d %s\n", GrafcetId, Grafcet->Frozen ? blue("FROZEN") : "");
             for(int Index = 0; Index < Grafcet->StateCount; ++Index) {
                 printf("%5s: %s\n", States[Grafcet->States[Index]].Name,
-                       States[Grafcet->States[Index]].Active ? "Active" : "Inactive");
+                       States[Grafcet->States[Index]].Active ? green("Active") : "Inactive");
             }
             puts("");
 
@@ -298,12 +300,12 @@ int main(int Argc, char *Argv[]) {
 
         printf("Inputs:\n");
         for(int Index = 1; Index < ArrayCount(Inputs); ++Index) {
-            printf("%10s (%c): %s\n", Inputs[Index].Name, Inputs[Index].Key, Inputs[Index].Active ? "Active" : "Inactive");
+            printf("%10s (%c): %s\n", Inputs[Index].Name, Inputs[Index].Key, Inputs[Index].Active ? green("Active") : "Inactive");
         }
         puts("");
         printf("Outputs:\n");
         for(int Index = 0; Index < ArrayCount(Outputs); ++Index) {
-            printf("%10s: %s\n", Outputs[Index].Name, Outputs[Index].Active ? "Active" : "Inactive");
+            printf("%10s: %s\n", Outputs[Index].Name, Outputs[Index].Active ? green("Active") : "Inactive");
         }
 
         puts("\n");
