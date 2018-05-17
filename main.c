@@ -137,16 +137,17 @@ static transition Transitions[TransitionCount];
 
 typedef struct {
     bool Active;
+    bool Modified;
     char Name[25];
     char Key;
 } input;
 
-#define inputStructWriter(Name, Key) { false, #Name, Key }
-#define inputMacro(W) W(QUIT, 'q'), W(M_MAX, 'a'), W(M_MIN, 's'), W(PRATO1, 'd'), W(PRATO2, 'f'), W(PARAGEM, 'p'), W(CICLO, 'c')
+#define inputMacro(W) W(QUIT, 'q'), W(M_MAX, 'a'), W(M_MIN, 's'), W(PRATO1, 'd'), W(PRATO2, 'f'), \
+    W(PARAGEM, 'p'), W(CICLO, 'c')
 
+#define inputStructWriter(Name, Key) { false, false, #Name, Key }
 static input Inputs[] = { inputMacro(inputStructWriter) };
 typedef enum { inputMacro(ioEnumWriter) } inputLabel;
-#define input(Label) Inputs[IO_##Label].Active
 
 typedef struct {
     bool Active;
@@ -158,6 +159,10 @@ typedef struct {
 
 static output Outputs[] = { outputMacro(outputStructWriter) };
 typedef enum { outputMacro(ioEnumWriter) } outputLabel;
+
+#define input(Label) Inputs[IO_##Label].Active
+#define RE(Label) (input(Label) && Inputs[IO_##Label].Modified)
+#define FE(Label) (!input(Label) && Inputs[IO_##Label].Modified)
 #define output(Label) Outputs[IO_##Label].Active = true
 
 #define freeze(Id) Grafcets[Id].Frozen = true
@@ -214,7 +219,7 @@ int main(int Argc, char *Argv[]) {
     newState(0, s1, {});
     States[State_Xs1].Active = true;
     newTransition(0, s1, ARR(State_Xs1), ARR(State_Xs2), ((active(2) || active(4) || active(6) || active(7)) &&
-                                                          input(PARAGEM)));
+                                                          RE(PARAGEM)));
     newState(0, s2, { freeze(1); });
     newTransition(0, s2, ARR(State_Xs2), ARR(State_Xs1), (!input(PARAGEM)));
 
@@ -229,12 +234,18 @@ int main(int Argc, char *Argv[]) {
             Outputs[Index].Active = false;
         }
 
+        // NOTE(nox): Reset input modification flag
+        for(int Index = 0; Index < ArrayCount(Inputs); ++Index) {
+            Inputs[Index].Modified = false;
+        }
+
         // NOTE(nox): Read inputs
         while(_kbhit()) {
             char C = getchar();
             for(int Index = 0; Index < ArrayCount(Inputs); ++Index) {
                 if(Inputs[Index].Key == C) {
                     Inputs[Index].Active = !Inputs[Index].Active;
+                    Inputs[Index].Modified = true;
                     break;
                 }
             }

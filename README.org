@@ -10,6 +10,7 @@ one. This is a technique called [[https://en.wikipedia.org/wiki/Metaprogramming]
 ** Features
 - Generic grafcet system, with a variable number of grafcets, states and transitions
 - Customizable inputs and outputs
+  - With rising and falling edges
 - Colorful, automatic debug information
 - State timers
 - Supervising
