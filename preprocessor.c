@@ -390,7 +390,6 @@ int main(int ArgCount, char **Args) {
     tokenizer Tokenizer = {};
     Tokenizer.At = FileContents;
 
-
     printf("#if defined(OUTPUTS_AND_CONDITIONS)\n\n");
     bool Parsing = true;
     token PreviousToken = {};

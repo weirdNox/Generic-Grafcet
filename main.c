@@ -155,7 +155,7 @@ typedef struct {
 } output;
 
 #define outputStructWriter(Name) { false, #Name }
-#define outputMacro(W) W(ESQUERDA), W(BOMBA_V5), W(MOTOR_PA), W(V1), W(V2), W(V3), W(V4), W(V5), W(V7)
+#define outputMacro(W) W(ESQUERDA), W(BOMBA_V5), W(MOTOR_PA), W(V1), W(V2), W(V3), W(V4), W(V7)
 
 static output Outputs[] = { outputMacro(outputStructWriter) };
 typedef enum { outputMacro(ioEnumWriter) } outputLabel;
@@ -202,7 +202,7 @@ int main(int Argc, char *Argv[]) {
     newState(1, 5, {});
     newTransition(1, 3, ARR(State_X4), ARR(State_X5), (input(PRATO2)));
 
-    newState(1, 6, { if(!input(M_MAX)) output(V5); });
+    newState(1, 6, { if(!input(M_MAX)) output(BOMBA_V5); });
     newTransition(1, 4, ARR(State_X3, State_X5, State_X6), ARR(State_X7), (input(M_MAX)));
 
     newState(1, 7, { output(ESQUERDA); output(MOTOR_PA); output(V2); output(V4);  });
@@ -229,12 +229,11 @@ int main(int Argc, char *Argv[]) {
         if(input(QUIT)) {
             break;
         }
-        // NOTE(nox): Reset outputs
+
+        // NOTE(nox): Reset outputs and inputs modification flag
         for(int Index = 0; Index < ArrayCount(Outputs); ++Index) {
             Outputs[Index].Active = false;
         }
-
-        // NOTE(nox): Reset input modification flag
         for(int Index = 0; Index < ArrayCount(Inputs); ++Index) {
             Inputs[Index].Modified = false;
         }
@@ -300,8 +299,12 @@ int main(int Argc, char *Argv[]) {
             // NOTE(nox): Print debug information
             printf("Grafcet %d %s\n", GrafcetId, Grafcet->Frozen ? blue("FROZEN") : "");
             for(int Index = 0; Index < Grafcet->StateCount; ++Index) {
-                printf("%5s: %s\n", States[Grafcet->States[Index]].Name,
-                       States[Grafcet->States[Index]].Active ? green("Active") : "Inactive");
+                if(States[Grafcet->States[Index]].Active) {
+                    printf("%5s: " green("Active") " %.1lfs\n", States[Grafcet->States[Index]].Name,
+                           (double)States[Grafcet->States[Index]].Timer/10);
+                } else {
+                    printf("%5s: Inactive\n", States[Grafcet->States[Index]].Name);
+                }
             }
             puts("");
 
@@ -311,7 +314,8 @@ int main(int Argc, char *Argv[]) {
 
         printf("Inputs:\n");
         for(int Index = 1; Index < ArrayCount(Inputs); ++Index) {
-            printf("%10s (%c): %s\n", Inputs[Index].Name, Inputs[Index].Key, Inputs[Index].Active ? green("Active") : "Inactive");
+            printf("%10s (%c): %s\n", Inputs[Index].Name, Inputs[Index].Key,
+                   Inputs[Index].Active ? green("Active") : "Inactive");
         }
         puts("");
         printf("Outputs:\n");
