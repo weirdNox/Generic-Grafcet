@@ -7,7 +7,7 @@ It works by having the source be fed to a preprocessor, which generates custom f
 and enums in another file (preprocessor_output.h) that will be included by the original
 one. This is a technique called [[https://en.wikipedia.org/wiki/Metaprogramming][metaprogramming]].
 
-[[file:Example.png]]
+[[https://youtu.be/t8XrhOiZT2E][Watch a screencast here!]]
 
 ** Features
 - Generic grafcet system, with a variable number of grafcets, states and transitions
